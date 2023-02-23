@@ -6,7 +6,7 @@
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/13 02:32:15 by Cutku             #+#    #+#             */
-/*   Updated: 2023/02/20 16:08:25 by Cutku            ###   ########.fr       */
+/*   Updated: 2023/02/23 11:54:16 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,11 +21,17 @@
 # include <string.h>
 # include <fcntl.h>
 
-typedef struct s_pipes
+typedef struct s_pipex
 {
-	int	*pipeline[2];
+	int		fd;
 	pid_t	*pid;
-	int		fd[2];
-} t_pipes;
+	char	*my_envp;
+	int		**pipeline;
+	char	**command;
+	char	**real_envp;
+} t_pipex;
+
+
+void	my_dup2(int input, int output);
 
 #endif

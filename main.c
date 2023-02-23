@@ -6,7 +6,7 @@
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/11 16:50:15 by Cutku             #+#    #+#             */
-/*   Updated: 2023/02/20 17:59:01 by Cutku            ###   ########.fr       */
+/*   Updated: 2023/02/23 17:16:35 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,15 +62,14 @@ char	*get_env_path(char **envp)
 	int	i;
 
 	i = 0;
-	if (envp && *envp)
+	if (envp && envp[i])
 	{
 		while (ft_strncmp(*envp + i, "PATH=", 5))
 			i++;
-		if (!(*envp + i))
+		if (!(envp[i]))
 			return ("/usr/bin");
 		if (ft_strncmp(*envp + i, "PATH=", 5) == 0)
-			i += 5;
-		return (*envp + i);
+			return (*envp + i + 5); 
 	}
 	return ("/usr/bin");
 }
@@ -83,113 +82,131 @@ int	open_file(char *filename, int flag)
 	{
 		fd = open(filename, O_RDONLY);
 		if (fd == -1)
-		{
-			perror("File");
-			exit(errno);
-		}		
+			perror("File");		
 	}
 	if (flag == 1)
 	{
 		fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
 		if (fd == -1)
-		{
 			perror("File");
-			exit(errno);
-		}
 	}
 	return (fd);
 }
 
-void	multiple_command(int argc, char **argv, char **envp)
+void	my_dup2(int input, int output)
 {
-	
-}
-
-void	first_child(int	pipeline[2], int argc, char **argv, char **envp)
-{
-	char	**command;
-	char	*my_envp;
-	pid_t	pid;
-	int		fd;
-
-	pid = fork();
-	my_envp = get_env_path(envp);
-	if (pid == -1)
+	if (dup2(input, STDIN_FILENO) == -1)
 	{
-		perror("Fork");
-		exit(EXIT_FAILURE);	
-	}
-	else if (pid == 0)
-	{
-		close(pipeline[0]);
-		command = ft_split(argv[2], ' ');
-		fd = open_file(argv[1], 0);
-		dup2(fd, STDIN_FILENO);
-		close(fd);
-		dup2(pipeline[1], STDOUT_FILENO);
-		close(pipeline[1]);
-		if (get_command_path(my_envp, command[0]) == NULL)
-		{
-			perror("Command not found");
-			exit(127);
-		}
-		execve(get_command_path(my_envp, command[0]), command, envp);
-		perror("Execve error");
+		perror("Dup2");
 		exit(EXIT_FAILURE);
 	}
+	close(input);
+	if (dup2(output, STDOUT_FILENO) == -1)
+	{
+		perror("Dup2");
+		exit(EXIT_FAILURE);
+	}
+	close(output);
 }
-// void	mid_child()
-// {
 
-// }
-void	last_child(int	pipeline[2], int argc, char **argv, char **envp)
+void	create_pipelines(t_pipex *pipex, int num)
 {
-	char	**command;
-	char	*my_envp;
-	pid_t	pid;
-	int		fd;
+	int	i;
 
-	pid = fork();
-	my_envp = get_env_path(envp);
-	if (pid == -1)
+	i = -1;
+	pipex->pipeline = (int **)malloc(num * sizeof(int *));
+	if (pipex->pipeline == NULL)
+	{
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	while (++i < num)
+	{
+		pipex->pipeline[i] = (int *)malloc(sizeof(int) * 2);
+		if (pipex->pipeline[i] == NULL)
+		{
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		if (pipe(pipex->pipeline[i]) == -1)
+		{
+			perror("Pipe");
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+
+void	child_process(t_pipex *pipex, int i, char **argv, int argc, char **envp)
+{
+	pipex->pid[i] = fork();
+	if (pipex->pid[i] == -1)
 	{
 		perror("Fork");
 		exit(EXIT_FAILURE);
 	}
-	if (pid > 0)
+	if (pipex->pid[i] == 0)
 	{
-		close(pipeline[1]);
-		command = ft_split(argv[argc - 2], ' ');
-		fd = open_file(argv[argc - 1], 1);
-		dup2(pipeline[0], STDIN_FILENO);
-		close(pipeline[0]);
-		dup2(fd, STDOUT_FILENO);
-		close(fd);
-		if (get_command_path(my_envp, command[0]) == NULL)
+		pipex->command = ft_split(argv[i + 2], ' ');
+		if (i == 0)
 		{
-			perror("Command not found");
-			exit(127);
+			close(pipex->pipeline[0][0]);
+			pipex->fd = open_file(argv[1], 0);
+			my_dup2(pipex->fd, pipex->pipeline[0][1]);
+			if (get_command_path(pipex->my_envp, pipex->command[0]) == NULL)
+			{
+				perror("Command not found");
+				exit(127);
+			}
+			execve(get_command_path(pipex->my_envp, pipex->command[0]), pipex->command, envp);
+			perror("Execve error");
+			exit(EXIT_FAILURE);
 		}
-		execve(get_command_path(my_envp, command[0]), command, envp);
-		perror("Execve error");
-		exit(EXIT_FAILURE);
+		if (i == argc - 4)
+		{
+			close(pipex->pipeline[0][1]);
+			pipex->fd = open_file(argv[argc - 1], 1);
+			my_dup2(pipex->pipeline[0][0], pipex->fd);
+			if (get_command_path(pipex->my_envp, pipex->command[0]) == NULL)
+			{
+				perror("Command not found");
+				exit(127);
+			}
+			execve(get_command_path(pipex->my_envp, pipex->command[0]), pipex->command, envp);
+			perror("Execve error");
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
 int	main(int argc, char **argv, char **envp)
 {
-	int		pipeline[2];
-	char	**my_envp;
+	t_pipex pipex;
+	int		i;
+	int		status;
 
 	if (argc == 5)
 	{
-		if (pipe(pipeline) == -1)
+		create_pipelines(&pipex, argc - 4);
+		pipex.pid = malloc(sizeof(pid_t) * argc - 3);
+		pipex.my_envp = get_env_path(envp);
+		if (pipex.pid == NULL)
 		{
-			perror("Pipe Error :");
+			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
-		first_child(pipeline, argc, argv, envp);
-		last_child(pipeline, argc, argv, envp);
+		i = -1;
+		while (++i < argc - 3)
+			child_process(&pipex, i, argv, argc, envp);
+		i = -1;
+		while (++i < argc - 4)
+		{
+			close(pipex.pipeline[i][0]);
+			close(pipex.pipeline[i][1]);
+		}
+		i = -1;
+		while (++i < argc - 3)
+			waitpid(pipex.pid[i], &status, 0);
+		// wait(NULL);
 	}
 	else
 	{
@@ -197,8 +214,6 @@ int	main(int argc, char **argv, char **envp)
 		perror("Invalid argument");
 		return (EINVAL);
 	}
-	close(pipeline[0]);
-	close(pipeline[1]);
-	wait(NULL);
 	return (EXIT_SUCCESS);
 }
+	
