@@ -6,7 +6,7 @@
 #    By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/01/05 15:43:45 by Cutku             #+#    #+#              #
-#    Updated: 2023/02/13 02:34:30 by Cutku            ###   ########.fr        #
+#    Updated: 2023/02/26 16:06:12 by Cutku            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -21,7 +21,7 @@ WHITE = \033[0;97m
 
 .SILENT:
 # Sources
-PIPEX_SRCS	=	main.c
+PIPEX_SRCS	=	pipex.c pipex_bonus.c
 PIPEX_OBJS	=	$(PIPEX_SRCS:.c=.o)
 
 LIBFT		= ./libft/
@@ -29,7 +29,7 @@ LIBFT_LIB	= ./libft/libft.a
 
 CC			= cc
 RM			= rm -f
-CFLAGS		= #-Wall -Wextra -Werror 
+CFLAGS		= -Wall -Wextra -Werror 
 
 NAME		= pipex
 
@@ -50,5 +50,7 @@ fclean: clean
 	$(RM) $(NAME)
 
 re:	fclean all
+
+bonus: all
 
 .PHONY:	all clean fclean re bonus

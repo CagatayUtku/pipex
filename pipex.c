@@ -1,17 +1,16 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   pipex.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/11 16:50:15 by Cutku             #+#    #+#             */
-/*   Updated: 2023/02/23 17:16:35 by Cutku            ###   ########.fr       */
+/*   Updated: 2023/02/26 16:33:26 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
-#include <errno.h>
 
 void	free_dubleptr(char **ptr)
 {
@@ -19,6 +18,19 @@ void	free_dubleptr(char **ptr)
 
 	i = 0;
 	while (ptr[i] != NULL)
+	{
+		free(ptr[i]);
+		i++;
+	}
+	free(ptr);
+}
+
+void	free_int_dubleptr(int **ptr, int numsize)
+{
+	int	i;
+
+	i = 0;
+	while (i < numsize)
 	{
 		free(ptr[i]);
 		i++;
@@ -34,6 +46,13 @@ char	*get_command_path(char *envp, char *command)
 	int		j;
 
 	i = 0;
+	if (command[0] == '/' || command[0] == '.')
+	{
+		if (access(command, X_OK) == 0)
+			return (command);
+		else
+			return (errno = ENOENT, NULL);
+	}
 	all_paths = ft_split(envp, ':');
 	while (all_paths[i] != NULL)
 	{
@@ -59,17 +78,19 @@ char	*get_command_path(char *envp, char *command)
 
 char	*get_env_path(char **envp)
 {
+	char **my_envp;
 	int	i;
 
 	i = 0;
-	if (envp && envp[i])
+	my_envp = envp;
+	if (my_envp && *my_envp)
 	{
-		while (ft_strncmp(*envp + i, "PATH=", 5))
+		while (ft_strncmp(*my_envp + i, "PATH=", 5))
 			i++;
-		if (!(envp[i]))
+		if (!(*my_envp + i))
 			return ("/usr/bin");
-		if (ft_strncmp(*envp + i, "PATH=", 5) == 0)
-			return (*envp + i + 5); 
+		if (ft_strncmp(*my_envp + i, "PATH=", 5) == 0)
+			return (*my_envp + i + 5); 
 	}
 	return ("/usr/bin");
 }
@@ -82,13 +103,19 @@ int	open_file(char *filename, int flag)
 	{
 		fd = open(filename, O_RDONLY);
 		if (fd == -1)
-			perror("File");		
+		{
+			perror("pipex: input");
+			exit(errno);
+		}
 	}
 	if (flag == 1)
 	{
 		fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
 		if (fd == -1)
-			perror("File");
+		{
+			perror("pipex: output");
+			exit(errno);
+		}
 	}
 	return (fd);
 }
@@ -97,14 +124,14 @@ void	my_dup2(int input, int output)
 {
 	if (dup2(input, STDIN_FILENO) == -1)
 	{
-		perror("Dup2");
-		exit(EXIT_FAILURE);
+		// perror("Dup2");
+		exit(9);
 	}
 	close(input);
 	if (dup2(output, STDOUT_FILENO) == -1)
 	{
-		perror("Dup2");
-		exit(EXIT_FAILURE);
+		// perror("Dup2");
+		exit(9);
 	}
 	close(output);
 }
@@ -136,84 +163,59 @@ void	create_pipelines(t_pipex *pipex, int num)
 	}
 }
 
-void	child_process(t_pipex *pipex, int i, char **argv, int argc, char **envp)
+void	first_child(t_pipex *pipex, char **argv, char **envp)
 {
-	pipex->pid[i] = fork();
-	if (pipex->pid[i] == -1)
+	char	**command;
+	int		fd;
+
+	pipex->pid[0] = fork();
+	if (pipex->pid[0] == -1)
 	{
 		perror("Fork");
 		exit(EXIT_FAILURE);
 	}
-	if (pipex->pid[i] == 0)
+	else if (pipex->pid[0] == 0)
 	{
-		pipex->command = ft_split(argv[i + 2], ' ');
-		if (i == 0)
+		close(pipex->pipeline[0][0]);
+		command = ft_split(argv[2], ' ');
+		fd = open_file(argv[1], 0);
+		my_dup2(fd, pipex->pipeline[0][1]);
+		if (get_command_path(pipex->all_paths, command[0]) == NULL)
 		{
-			close(pipex->pipeline[0][0]);
-			pipex->fd = open_file(argv[1], 0);
-			my_dup2(pipex->fd, pipex->pipeline[0][1]);
-			if (get_command_path(pipex->my_envp, pipex->command[0]) == NULL)
-			{
-				perror("Command not found");
-				exit(127);
-			}
-			execve(get_command_path(pipex->my_envp, pipex->command[0]), pipex->command, envp);
-			perror("Execve error");
-			exit(EXIT_FAILURE);
+			perror("command not found");
+			exit(127);
 		}
-		if (i == argc - 4)
-		{
-			close(pipex->pipeline[0][1]);
-			pipex->fd = open_file(argv[argc - 1], 1);
-			my_dup2(pipex->pipeline[0][0], pipex->fd);
-			if (get_command_path(pipex->my_envp, pipex->command[0]) == NULL)
-			{
-				perror("Command not found");
-				exit(127);
-			}
-			execve(get_command_path(pipex->my_envp, pipex->command[0]), pipex->command, envp);
-			perror("Execve error");
-			exit(EXIT_FAILURE);
-		}
+		execve(get_command_path(pipex->all_paths, command[0]), command, envp);
+		perror("Execve");
+		exit(EXIT_FAILURE);
 	}
 }
 
-int	main(int argc, char **argv, char **envp)
+void	last_child(t_pipex *pipex, char **argv, char **envp, int argc)
 {
-	t_pipex pipex;
-	int		i;
-	int		status;
+	char	**command;
+	int		fd;
 
-	if (argc == 5)
+	pipex->pid[argc - 4] = fork();
+	if (pipex->pid[argc - 4] == -1)
 	{
-		create_pipelines(&pipex, argc - 4);
-		pipex.pid = malloc(sizeof(pid_t) * argc - 3);
-		pipex.my_envp = get_env_path(envp);
-		if (pipex.pid == NULL)
-		{
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		i = -1;
-		while (++i < argc - 3)
-			child_process(&pipex, i, argv, argc, envp);
-		i = -1;
-		while (++i < argc - 4)
-		{
-			close(pipex.pipeline[i][0]);
-			close(pipex.pipeline[i][1]);
-		}
-		i = -1;
-		while (++i < argc - 3)
-			waitpid(pipex.pid[i], &status, 0);
-		// wait(NULL);
+		perror("Fork");
+		exit(EXIT_FAILURE);
 	}
-	else
+	else if (pipex->pid[argc - 4] == 0)
 	{
-		errno = EINVAL;
-		perror("Invalid argument");
-		return (EINVAL);
+		close(pipex->pipeline[argc - 5][1]);
+		command = ft_split(argv[argc - 2], ' ');
+		fd = open_file(argv[argc - 1], 1);
+		my_dup2(pipex->pipeline[argc - 5][0], fd);
+		if (get_command_path(pipex->all_paths, command[0]) == NULL)
+		{
+			perror("command not found");
+			exit(127);
+		}
+		execve(get_command_path(pipex->all_paths, command[0]), command, envp);
+		perror("Execve error");
+		exit(EXIT_FAILURE);
 	}
-	return (EXIT_SUCCESS);
 }
 	
