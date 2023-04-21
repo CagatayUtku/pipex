@@ -6,7 +6,7 @@
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/13 02:32:15 by Cutku             #+#    #+#             */
-/*   Updated: 2023/02/26 06:59:39 by Cutku            ###   ########.fr       */
+/*   Updated: 2023/04/20 06:12:22 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,25 +21,44 @@
 # include <string.h>
 # include <fcntl.h>
 # include <errno.h>
+# include <ctype.h>
 
 typedef struct s_pipex
 {
 	pid_t	*pid;
-	char	*all_paths;
-	char	*command_path;
+	char	**command;
+	char	**all_paths;
 	int		**pipeline;
-} t_pipex;
+	char	**envp;
+	char	*cmd_path;
+	char	*infile;
+	int		heredoc;
+	int		num_commands;
+}	t_pipex;
 
-void	my_dup2(int input, int output);
-void	free_dubleptr(char **ptr);
-void	free_int_dubleptr(int **ptr, int numsize);
-char	*get_command_path(char *envp, char *command);
-char	*get_env_path(char **envp);
-int	open_file(char *filename, int flag);
+// Main process. File > pipex.c
 void	create_pipelines(t_pipex *pipex, int num);
-void	first_child(t_pipex *pipex, char **argv, char **envp);
-void	last_child(t_pipex *pipex, char **argv, char **envp, int argc);
-void	mid_child(t_pipex *pipex, char **argv, char **envp, int argc, int i);
-
+void	create_child_process(t_pipex *pipex, char **argv, int argc);
+void	exec_child_process(t_pipex *pipex, char **argv, int argc, int i);
+//Finding env-command path. File > get_paths.c
+char	*get_command_path(t_pipex *pipex);
+char	**get_env_path(char **envp);
+char	*is_exact_path(t_pipex *pipex);
+void	error_cmdpath(t_pipex *pipex);
+//Here_doc. File > pipex_bonus.c
+void	exec_here_doc(t_pipex *pipex, char **argv, int argc);
+//Some usefull functions. File > pipex_utils.c
+void	my_dup2(int input, int output, t_pipex *pipex);
+void	my_waitpid(t_pipex *pipex);
+int		open_file(char *filename, int flag, t_pipex *pipex);
+//Parsing. File > parsing.c 
+char	**ft_parser(char *string);
+char	**word_lenght(char *string, int size);
+void	remove_escape(char *str);
+//Clean-up. File > clean_up.c
+void	free_char_dubleptr(char **ptr);
+void	free_int_dubleptr(int **ptr, int size);
+void	close_pipes(t_pipex *pipex);
+void	free_all(t_pipex *pipex);
 
 #endif

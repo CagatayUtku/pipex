@@ -6,7 +6,7 @@
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/10/16 19:27:30 by Cutku             #+#    #+#             */
-/*   Updated: 2022/10/23 21:52:47 by Cutku            ###   ########.fr       */
+/*   Updated: 2023/04/14 15:41:42 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,8 @@
 
 # include <stdlib.h>
 # include <unistd.h>
+# include "get_next_line/get_next_line_bonus.h"
+# include "get_next_line/get_next_line.h"
 
 typedef struct s_list
 {

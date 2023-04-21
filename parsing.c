@@ -5,51 +5,93 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/02/20 18:08:47 by Cutku             #+#    #+#             */
-/*   Updated: 2023/02/25 16:34:04 by Cutku            ###   ########.fr       */
+/*   Created: 2023/04/16 05:19:04 by Cutku             #+#    #+#             */
+/*   Updated: 2023/04/21 06:04:50 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-void	child_process(t_pipex *pipex, int i, char **argv, int argc, char **envp)
+#include "pipex.h"
+
+void	remove_escape(char *str)
 {
-	pipex->pid[i] = fork();
-	if (pipex->pid[i] == -1)
+	char	*ptr;
+
+	ptr = str;
+	if (ptr != NULL)
 	{
-		perror("Fork");
-		exit(EXIT_FAILURE);
-	}
-	if (pipex->pid[i] == 0)
-	{
-		pipex->command = ft_split(argv[i + 2], ' ');
-		if (i == 0)
+		while (ft_strchr(ptr, '\\'))
 		{
-			close(pipex->pipeline[0][0]);
-			pipex->fd = open_file(argv[1], 0);
-			if (pipex->fd == -1) return ;
-			my_dup2(pipex->fd, pipex->pipeline[0][1]);
-			if (get_command_path(pipex->my_envp, pipex->command[0]) == NULL)
-			{
-				perror("Command not found");
-				exit(127);
-			}
-			execve(get_command_path(pipex->my_envp, pipex->command[0]), pipex->command, envp);
-			perror("Execve error");
-			exit(EXIT_FAILURE);
-		}
-		if (i == argc - 4)
-		{
-			close(pipex->pipeline[0][1]);
-			pipex->fd = open_file(argv[argc - 1], 1);
-			if (pipex->fd == -1) return ;
-			my_dup2(pipex->pipeline[0][0], pipex->fd);
-			if (get_command_path(pipex->my_envp, pipex->command[0]) == NULL)
-			{
-				perror("Command not found");
-				exit(127);
-			}
-			execve(get_command_path(pipex->my_envp, pipex->command[0]), pipex->command, envp);
-			perror("Execve error");
-			exit(EXIT_FAILURE);
+			ptr = ft_strchr(ptr, '\\');
+			ft_memmove(ptr, ptr + 1, ft_strlen(ptr + 1) + 1);
+			ptr++;
 		}
 	}
+}
+
+int	word_len(char *temp)
+{
+	int	len;
+
+	len = 0;
+	while (temp[len] != '\0' && temp[len] != '\'' \
+		&& temp[len] != '\"' && temp[len] != ' ')
+		len++;
+	return (len);
+}
+
+char	**word_lenght(char *string, int size)
+{
+	int		i;
+	char	*temp;
+	char	**str;
+
+	temp = string;
+	i = 0;
+	str = (char **)malloc((size + 1) * sizeof(char *));
+	while (*temp != '\0')
+	{
+		while (*temp == ' ')
+			temp++;
+		if (*temp != '\0' && (*temp == '\'' || *temp == '\"'))
+		{
+			str[i] = ft_substr(temp, 1, ft_strrchr(temp, *temp) - temp - 1);
+			temp = ft_strrchr(temp, *temp) + 1;
+			remove_escape(str[i]);
+			i++;
+		}
+		if (*temp != '\0' && *temp != '\'' && *temp != '\"' && *temp != ' ')
+		{
+			str[i++] = ft_substr(temp, 0, word_len(temp));
+			temp += word_len(temp);
+		}
+	}
+	return (str[i] = NULL, str);
+}
+
+char	**ft_parser(char *string)
+{
+	int		ct;
+	char	*p;
+
+	ct = 1;
+	p = string;
+	if (ft_strchr(p, ' ') != NULL)
+	{
+		while (*p != '\0')
+		{
+			while (*p == ' ')
+				p++;
+			if (*p == '\'' || *p == '\"')
+			{
+				p = ft_strrchr(p, *p);
+				p++;
+				ct++;
+			}
+			if (*p != ' ' && *p != '\'' && *p != '\"' && *p != '\0' && ct++)
+				while (*p != '\0' && *p != ' ' && *p != '\'' && *p != '\"')
+					p++;
+		}
+		return (word_lenght(string, ct - 1));
+	}
+	return (remove_escape(p), ft_split(string, ' '));
 }
