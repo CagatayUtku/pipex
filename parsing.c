@@ -5,70 +5,93 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/02/20 18:08:47 by Cutku             #+#    #+#             */
-/*   Updated: 2023/02/23 11:55:19 by Cutku            ###   ########.fr       */
+/*   Created: 2023/04/16 05:19:04 by Cutku             #+#    #+#             */
+/*   Updated: 2023/04/21 06:04:50 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "pipex.h"
 
-void	first_child(int	pipeline[2], int argc, char **argv, char **envp)
+void	remove_escape(char *str)
 {
-	char	**command;
-	char	*my_envp;
-	pid_t	pid;
-	int		fd;
+	char	*ptr;
 
-	pid = fork();
-	my_envp = get_env_path(envp);
-	if (pid == -1)
+	ptr = str;
+	if (ptr != NULL)
 	{
-		perror("Fork");
-		exit(EXIT_FAILURE);	
-	}
-	else if (pid == 0)
-	{
-		close(pipeline[0]);
-		command = ft_split(argv[2], ' ');
-		fd = open_file(argv[1], 0);
-		my_dup2(fd, pipeline[1]);
-		if (get_command_path(my_envp, command[0]) == NULL)
+		while (ft_strchr(ptr, '\\'))
 		{
-			perror("Command not found");
-			exit(127);
+			ptr = ft_strchr(ptr, '\\');
+			ft_memmove(ptr, ptr + 1, ft_strlen(ptr + 1) + 1);
+			ptr++;
 		}
-		execve(get_command_path(my_envp, command[0]), command, envp);
-		perror("Execve error");
-		exit(EXIT_FAILURE);
 	}
 }
 
-void	last_child(int	pipeline[2], int argc, char **argv, char **envp)
+int	word_len(char *temp)
 {
-	char	**command;
-	char	*my_envp;
-	pid_t	pid;
-	int		fd;
+	int	len;
 
-	pid = fork();
-	my_envp = get_env_path(envp);
-	if (pid == -1)
+	len = 0;
+	while (temp[len] != '\0' && temp[len] != '\'' \
+		&& temp[len] != '\"' && temp[len] != ' ')
+		len++;
+	return (len);
+}
+
+char	**word_lenght(char *string, int size)
+{
+	int		i;
+	char	*temp;
+	char	**str;
+
+	temp = string;
+	i = 0;
+	str = (char **)malloc((size + 1) * sizeof(char *));
+	while (*temp != '\0')
 	{
-		perror("Fork");
-		exit(EXIT_FAILURE);
-	}
-	if (pid > 0)
-	{
-		close(pipeline[1]);
-		command = ft_split(argv[argc - 2], ' ');
-		fd = open_file(argv[argc - 1], 1);
-		my_dup2(pipeline[0], fd);
-		if (get_command_path(my_envp, command[0]) == NULL)
+		while (*temp == ' ')
+			temp++;
+		if (*temp != '\0' && (*temp == '\'' || *temp == '\"'))
 		{
-			perror("Command not found");
-			exit(127);
+			str[i] = ft_substr(temp, 1, ft_strrchr(temp, *temp) - temp - 1);
+			temp = ft_strrchr(temp, *temp) + 1;
+			remove_escape(str[i]);
+			i++;
 		}
-		execve(get_command_path(my_envp, command[0]), command, envp);
-		perror("Execve error");
-		exit(EXIT_FAILURE);
+		if (*temp != '\0' && *temp != '\'' && *temp != '\"' && *temp != ' ')
+		{
+			str[i++] = ft_substr(temp, 0, word_len(temp));
+			temp += word_len(temp);
+		}
 	}
+	return (str[i] = NULL, str);
+}
+
+char	**ft_parser(char *string)
+{
+	int		ct;
+	char	*p;
+
+	ct = 1;
+	p = string;
+	if (ft_strchr(p, ' ') != NULL)
+	{
+		while (*p != '\0')
+		{
+			while (*p == ' ')
+				p++;
+			if (*p == '\'' || *p == '\"')
+			{
+				p = ft_strrchr(p, *p);
+				p++;
+				ct++;
+			}
+			if (*p != ' ' && *p != '\'' && *p != '\"' && *p != '\0' && ct++)
+				while (*p != '\0' && *p != ' ' && *p != '\'' && *p != '\"')
+					p++;
+		}
+		return (word_lenght(string, ct - 1));
+	}
+	return (remove_escape(p), ft_split(string, ' '));
 }

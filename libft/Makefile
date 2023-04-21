@@ -6,7 +6,7 @@
 #    By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/10/18 01:33:31 by Cutku             #+#    #+#              #
-#    Updated: 2023/01/23 00:05:15 by Cutku            ###   ########.fr        #
+#    Updated: 2023/04/16 07:15:43 by Cutku            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -27,26 +27,30 @@ BONUS			=	ft_lstadd_back.c ft_lstadd_front.c ft_lstclear.c \
 					ft_lstmap.c ft_lstnew.c ft_lstsize.c
 BONUS_OBJS		= $(BONUS:.c=.o)
 
-CC				= gcc
+GNL_SRCS		= get_next_line/get_next_line.c get_next_line/get_next_line_utils.c
+
+GNL_OBJS		= $(GNL_SRCS:.c=.o)
+
+CC				= cc
 RM				= rm -f
-CFLAGS			= -Wall -Wextra -Werror -I.
+CFLAGS			= -Wall -Wextra -Werror
 
 NAME			= libft.a
 
 all:			$(NAME)
 
-$(NAME):		$(OBJS)
-	@ar rcs $(NAME) $(OBJS)
+$(NAME):		$(OBJS) $(GNL_OBJS)
+	ar rcs $(NAME) $(OBJS) $(GNL_OBJS)
 
 clean:
-	@$(RM) $(OBJS) $(BONUS_OBJS)
+	$(RM) $(OBJS) $(BONUS_OBJS) $(GNL_OBJS)
 
 fclean:			clean
 	@$(RM) $(NAME)
 
 re:	fclean all
 
-bonus:		$(OBJS) $(BONUS_OBJS)
-	@ar rcs $(NAME) $(OBJS) $(BONUS_OBJS)
+bonus:		$(OBJS) $(BONUS_OBJS) $(GNL_OBJS)
+	ar rcs $(NAME) $(OBJS) $(BONUS_OBJS) $(GNL_OBJS)
 
 .PHONY:			all clean fclean re bonus
