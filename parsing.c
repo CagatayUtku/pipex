@@ -6,7 +6,7 @@
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/04/16 05:19:04 by Cutku             #+#    #+#             */
-/*   Updated: 2023/04/21 06:04:50 by Cutku            ###   ########.fr       */
+/*   Updated: 2023/04/21 23:12:02 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,30 +39,30 @@ int	word_len(char *temp)
 	return (len);
 }
 
-char	**word_lenght(char *string, int size)
+char	**word_lenght(char *ptr, int size)
 {
 	int		i;
-	char	*temp;
 	char	**str;
 
-	temp = string;
 	i = 0;
 	str = (char **)malloc((size + 1) * sizeof(char *));
-	while (*temp != '\0')
+	if (!str)
+		return (NULL);
+	while (*ptr != '\0')
 	{
-		while (*temp == ' ')
-			temp++;
-		if (*temp != '\0' && (*temp == '\'' || *temp == '\"'))
+		while (*ptr == ' ')
+			ptr++;
+		if (*ptr != '\0' && (*ptr == '\'' || *ptr == '\"'))
 		{
-			str[i] = ft_substr(temp, 1, ft_strrchr(temp, *temp) - temp - 1);
-			temp = ft_strrchr(temp, *temp) + 1;
-			remove_escape(str[i]);
+			str[i] = ft_substr(ptr, 1, ft_strrchr(ptr, *ptr) - ptr - 1);
+			ptr = ft_strrchr(ptr, *ptr) + 1;
+			remove_escape(str[i++]);
 			i++;
 		}
-		if (*temp != '\0' && *temp != '\'' && *temp != '\"' && *temp != ' ')
+		if (*ptr != '\0' && *ptr != '\'' && *ptr != '\"' && *ptr != ' ')
 		{
-			str[i++] = ft_substr(temp, 0, word_len(temp));
-			temp += word_len(temp);
+			str[i++] = ft_substr(ptr, 0, word_len(ptr));
+			ptr += word_len(ptr);
 		}
 	}
 	return (str[i] = NULL, str);

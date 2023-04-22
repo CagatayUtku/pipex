@@ -6,7 +6,7 @@
 /*   By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/13 02:32:15 by Cutku             #+#    #+#             */
-/*   Updated: 2023/04/20 06:12:22 by Cutku            ###   ########.fr       */
+/*   Updated: 2023/04/21 22:58:10 by Cutku            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,13 +15,12 @@
 
 # include "./libft/libft.h"
 # include <unistd.h>
-# include <stdio.h>
 # include <sys/wait.h>
 # include <stdlib.h>
-# include <string.h>
 # include <fcntl.h>
 # include <errno.h>
 # include <ctype.h>
+# include <stdio.h>
 
 typedef struct s_pipex
 {

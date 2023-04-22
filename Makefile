@@ -6,7 +6,7 @@
 #    By: Cutku <cutku@student.42heilbronn.de>       +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/01/05 15:43:45 by Cutku             #+#    #+#              #
-#    Updated: 2023/04/21 06:27:55 by Cutku            ###   ########.fr        #
+#    Updated: 2023/04/21 23:00:54 by Cutku            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,7 +20,6 @@ CYAN = \033[0;96m
 WHITE = \033[0;97m
 
 .SILENT:
-# Sources
 PIPEX_SRCS	=	pipex.c parsing.c clean_up.c pipex_utils.c get_paths.c
 PIPEX_OBJS	=	$(PIPEX_SRCS:.c=.o)
 
